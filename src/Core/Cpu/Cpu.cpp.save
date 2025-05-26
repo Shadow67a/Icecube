@@ -1,0 +1,72 @@
+#include <sys/mman.h>
+#include <iostream>
+#include <algorithm>
+#include <string.h>
+
+#include "./Cpu.hpp"
+#include "../Memory/Mmu.hpp"
+
+void Cpu::init(uint8_t* memoryBufferPointer)
+{
+	pc = 0;
+	msr = 0x00000040;
+	msrUpdated();
+	gpr.fill(0);
+	spr.fill(0);
+	fpr.fill(0);
+	sr.fill(0);
+
+	spr[SPR_PVR] = 0x00083214;
+	spr[SPR_HID1] = 0x80000000;
+
+	//Not sure what this is supposed to do, looks important.... Got it from dolphin source;
+	spr[924] = 0x0d96e200;
+	spr[925] = 0x1840c00d;
+	spr[926] = 0x82bb08e8;
+
+	fpscr = 0;
+	spr[SPR_DEC] = 0xffffffff;
+	system_exception_vector = 0;
+
+	mmu.init(memoryBufferPointer);
+	codeBuffer = mmap(NULL, CODEBUFSIZE, PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+};
+
+void Cpu::msrUpdated()
+{
+	uint32_t mask = 0b00000000000000000000000001000000;
+	bool IP = (msr & mask) << 25;
+	if (IP)
+	{
+		system_exception_vector = 0xfff00000;
+	} else
+	{
+		system_exception_vector = 0;
+	};
+};
+
+void Cpu::execute()
+{
+	if (JITBlocks.contains(pc))
+	{
+		void(*func)() = (void(*)())JITBlocks[pc].code;
+		func();
+		pc = JITBlocks[pc].endPC;
+	} else
+	{
+		JITCompile();
+		void(*func)() = (void(*)())JITBlocks[pc].code;
+                func();
+                pc = JITBlocks[pc].endPC;
+	};
+};
+
+void Cpu::JITCompile()
+{
+	uint32_t instruction = mmu.read32(pc);
+	uint8_t opcode = (instruction & 0b11111100000000000000000000000000) >> 26;
+
+	while ()
+	std::cout << "[InstructionAt][0x" << std::hex << pc << "]: 0x" << std::hex << instruction << std::endl;
+	std::cout << "[Opcode]: " << (int)opcode << std::endl;
+};

@@ -1,0 +1,101 @@
+#include <iostream>
+#include <fstream>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
+#include "./Dol.hpp"
+#include "../Endian.hpp"
+
+void Dol::load(const char* path)
+{
+	std::ifstream file(path, std::ios::binary);
+
+	if (!file.is_open())
+	{
+		std::cout << "[IPL::ERROR]: Failed to open .dol: " << path << std::endl;
+		std::cout << strerror(errno) << std::endl;
+		exit(-1);
+	};
+
+	for (size_t i = 0; i<TEXT_OFFSET_SIZE; i+=4)
+	{
+		file.seekg(TEXT_OFFSET_START+i, std::ios::beg);
+		file.read(reinterpret_cast<char*>(&textFileOffsets[i/4]), 4);
+		textFileOffsets[i/4] = bigEndian(textFileOffsets[i/4]);
+	        std::cout << "[DOL]: .text" << i/4 << " file offset: 0x"  << std::hex << textFileOffsets[i/4] << std::endl;
+	};
+
+	for (size_t i = 0; i<DATA_OFFSET_SIZE; i+=4)
+        {
+                file.seekg(DATA_OFFSET_START+i, std::ios::beg);
+                file.read(reinterpret_cast<char*>(&dataFileOffsets[i/4]), 4);
+		dataFileOffsets[i/4] = bigEndian(dataFileOffsets[i/4]);
+                std::cout << "[DOL]: .data" << i/4 << " file offset: 0x"  << std::hex << dataFileOffsets[i/4] << std::endl;
+        };
+
+	for (size_t i = 0; i<TEXT_LOADING_ADDRESS_SIZE; i+=4)
+	{
+		file.seekg(TEXT_LOADING_ADDRESS_START+i, std::ios::beg);
+		file.read(reinterpret_cast<char*>(&textLoadingAddresses[i/4]), 4);
+		textLoadingAddresses[i/4] = bigEndian(textLoadingAddresses[i/4]);
+		std::cout << "[DOL]: .text" << i/4 << " loading address: 0x" << std::hex << textLoadingAddresses[i/4] << std::endl;
+	};
+
+	for (size_t i = 0; i<DATA_LOADING_ADDRESS_SIZE; i+=4)
+	{
+		file.seekg(DATA_LOADING_ADDRESS_START+i, std::ios::beg);
+		file.read(reinterpret_cast<char*>(&dataLoadingAddresses[i/4]), 4);
+		dataLoadingAddresses[i/4] = bigEndian(dataLoadingAddresses[i/4]);
+		std::cout << "[DOL]: .data" << i/4 << " loading address: 0x" << std::hex << dataLoadingAddresses[i/4] << std::endl;
+	};
+
+	for (size_t i = 0; i<TEXT_SECTION_SIZE_SIZE; i+=4)
+	{
+		file.seekg(TEXT_SECTION_SIZE_START+i, std::ios::beg);
+		file.read(reinterpret_cast<char*>(&textSectionSizes[i/4]), 4);
+		textSectionSizes[i/4] = bigEndian(textSectionSizes[i/4]);
+		if (textSectionSizes[i/4]>0)
+		{
+			textSections.resize(textSections.size()+1);
+			textSections[i/4].data.resize(textSectionSizes[i/4]);
+		};
+		std::cout << "[DOL]: .text" << i/4 << " section size: 0x" << std::hex << textSectionSizes[i/4] << std::endl;
+	};
+
+	for (size_t i = 0; i<DATA_SECTION_SIZE_SIZE; i+=4)
+	{
+		file.seekg(DATA_SECTION_SIZE_START+i, std::ios::beg);
+		file.read(reinterpret_cast<char*>(&dataSectionSizes[i/4]), 4);
+		dataSectionSizes[i/4] = bigEndian(dataSectionSizes[i/4]);
+		if (dataSectionSizes[i/4]>0)
+		{
+			dataSections.resize(dataSections.size()+1);
+			dataSections[i/4].data.resize(dataSectionSizes[i/4]);
+		};
+		std::cout << "[DOL]: .data" << i/4 << " section size: 0x" << std::hex << dataSectionSizes[i/4] << std::endl;
+	};
+
+	file.seekg(BSS_ADDRESS_START, std::ios::beg);
+	file.read(reinterpret_cast<char*>(&bssAddress), BSS_ADDRESS_SIZE);
+	bssAddress = bigEndian(bssAddress);
+	std::cout << "[DOL]: bss address: 0x" << std::hex << bssAddress << std::endl;
+
+	file.seekg(BSS_SIZE_START, std::ios::beg);
+	file.read(reinterpret_cast<char*>(&bssSize), BSS_SIZE_SIZE);
+	bssSize = bigEndian(bssSize);
+	std::cout << "[DOL]: bss size: 0x" << std::hex << bssSize << std::endl;
+
+	file.seekg(ENTRYPOINT_START, std::ios::beg);
+	file.read(reinterpret_cast<char*>(&entryPoint), ENTRYPOINT_SIZE);
+	entryPoint = bigEndian(entryPoint);
+	std::cout << "[DOL]: entrypoint: 0x" << std::hex << entryPoint << std::endl;
+
+	for (size_t i = 0; i<textSections.size(); i++)
+	{
+		file.seekg(textFileOffsets[i], std::ios::beg);
+		file.read((char*)textSections[i].data.data(), textSectionSizes[i]);
+	};
+
+	file.close();
+};
