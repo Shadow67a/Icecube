@@ -6,7 +6,7 @@ project(icecube LANGUAGES CXX C VERSION 0.1)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-set(CMAKE_CXX_FLAGS "-g")
+set(CMAKE_CXX_FLAGS "-g -Wno-narrowing")
 
 add_executable(icecube
 	src/main.cpp
@@ -16,4 +16,5 @@ add_executable(icecube
 	src/Core/Ipl/Ipl.cpp
 	src/Core/Dol/Dol.cpp
 	src/Core/Endian.cpp
+	src/Core/VI/Vi.cpp
 )

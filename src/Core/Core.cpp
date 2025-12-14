@@ -12,6 +12,7 @@ void Core::init()
 	//Allocate 24 mb of game cube ram;
 	memoryBuffer = new uint8_t[GAMECUBE_RAM_SIZE];
 	cpu.init(memoryBuffer);
+	cpu.mmu.addDevice(&vi);
 };
 
 void Core::loadDol(char* path)
@@ -27,7 +28,7 @@ void Core::loadDol(char* path)
 
 	cpu.mmu.fill(dolfile.bssAddress, 0, dolfile.bssSize);
 	cpu.pc = dolfile.entryPoint;
-	cpu.nextPC = dolfile.entryPoint;
+//	cpu.nextPC = dolfile.entryPoint;
 	while (1)
 	{
 		cpu.execute();

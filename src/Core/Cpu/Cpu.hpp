@@ -24,8 +24,8 @@
 
 #define NEXT() \
     do { \
-	nextPC += 4; \
-        uint8_t _next[] = {0x48, 0xba, U64(nia), 0x81, 0x02, U32(0x4)}; \
+	cur += 4; \
+        uint8_t _next[] = {0x48, 0xb8, U64(cia), 0x81, 0x00, U32(0x04), 0x8b, 0x18, 0x48, 0xb9, U64(nia), 0x89, 0x19}; \
         code.insert(code.end(), std::begin(_next), std::end(_next)); \
     } while (0)
 
@@ -40,9 +40,11 @@ class Cpu
 	public:
 		uint32_t pc;
 		uint32_t nextPC;
+		uint32_t cur;
 		uint32_t msr;
 		uint32_t fpscr;
                 uint32_t system_exception_vector;
+		uint32_t cr;
 
 		std::array<uint32_t, 32> gpr;
 		std::array<uint32_t, 1024> spr;
@@ -60,6 +62,14 @@ class Cpu
 		void msrUpdated();
 		void init(uint8_t* memoryBufferPointer);
 		void execute();
+
+		static void bcx(uint32_t instruction);
+		static void bclrx(uint32_t instruction);
+		static void cmpi(uint32_t instruction);
+		static void rlwinm(uint32_t instruction);
+		static void updateCR(uint32_t crfD, uint32_t result);
 };
+
+extern Cpu* cpuInstance;
 
 #endif

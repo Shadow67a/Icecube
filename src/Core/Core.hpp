@@ -14,6 +14,7 @@ class Core
 	private:
 		Cpu cpu;
 		Ipl ipl;
+		Vi vi;
 	public:
 		uint8_t* memoryBuffer;
 
